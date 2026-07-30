@@ -1,0 +1,27 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Node.js & Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+.vercel
+
+# Golang Binaries & SQLite Local DB
+/backend/server
+/backend/rams.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment Files (Keep .env.example for templates)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env.local
