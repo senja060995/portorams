@@ -209,6 +209,7 @@ type Article struct {
 	Slug       string `gorm:"uniqueIndex;not null" json:"slug"`
 	CategoryID uint   `gorm:"index" json:"category_id"`
 
+	Title     string `gorm:"not null" json:"title"`
 	TitleID   string `json:"title_id"`
 	TitleEN   string `json:"title_en"`
 	ExcerptID string `gorm:"type:text" json:"excerpt_id"`

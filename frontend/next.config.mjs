@@ -2,14 +2,20 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-const apiOrigin = process.env.NEXT_PUBLIC_API_URL
-  ? new URL(process.env.NEXT_PUBLIC_API_URL)
-  : null;
+let apiOrigin = null;
+if (process.env.NEXT_PUBLIC_API_URL) {
+  try {
+    apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL);
+  } catch {
+    apiOrigin = null;
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },

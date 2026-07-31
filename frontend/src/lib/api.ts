@@ -17,9 +17,16 @@ import type {
 /**
  * Single source of truth for the API base URL. Nothing else in the app should
  * hardcode a host, so a deployment only needs NEXT_PUBLIC_API_URL set.
+ *
+ * NEXT_PUBLIC_API_URL is used for client-side requests. For server-side
+ * (SSR) requests, we prefer API_URL (server-only) so the Next.js server
+ * can reach the backend directly without going through the public proxy.
  */
+const CLIENT_API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+const SERVER_API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://backend:8080/api';
+
 export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api'
+  typeof window === 'undefined' ? SERVER_API_URL : CLIENT_API_URL
 ).replace(/\/$/, '');
 
 /** How long server-rendered content may be cached before revalidation. */

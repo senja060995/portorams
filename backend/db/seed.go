@@ -739,6 +739,7 @@ func seedArticles(database *gorm.DB) {
 		{
 			Slug:       "erp-percetakan-sidomulyo-advertising",
 			CategoryID: catID["use-case"],
+			Title:      "Menyusun ERP Percetakan untuk Sidomulyo Advertising",
 			TitleID:    "Menyusun ERP Percetakan untuk Sidomulyo Advertising",
 			TitleEN:    "Building a Printing ERP for Sidomulyo Advertising",
 			ExcerptID:  "Bagaimana perhitungan harga pokok produksi yang sebelumnya memakan waktu berhari-hari dipindahkan ke dalam satu alur kerja terukur.",
@@ -779,6 +780,7 @@ Monthly financial reporting that previously took several working days can now be
 		{
 			Slug:       "pos-offline-first-jaringan-tidak-stabil",
 			CategoryID: catID["updates"],
+			Title:      "Mengapa Kasir Harus Dirancang Luring Terlebih Dahulu",
 			TitleID:    "Mengapa Kasir Harus Dirancang Luring Terlebih Dahulu",
 			TitleEN:    "Why a Cashier System Should Be Designed Offline-First",
 			ExcerptID:  "Koneksi internet di banyak lokasi usaha belum dapat diandalkan. Sistem kasir yang bergantung penuh pada jaringan akan berhenti tepat saat paling dibutuhkan.",
@@ -818,6 +820,7 @@ A few things must be agreed during design: how receipt numbering avoids collisio
 		{
 			Slug:       "tixnova-arsitektur-ruang-tunggu-tiket",
 			CategoryID: catID["use-case"],
+			Title:      "TixNova: Menahan Lonjakan Pembelian Tiket dengan Ruang Tunggu",
 			TitleID:    "TixNova: Menahan Lonjakan Pembelian Tiket dengan Ruang Tunggu",
 			TitleEN:    "TixNova: Absorbing Ticket Purchase Surges With a Waiting Room",
 			ExcerptID:  "Penjualan tiket konser menciptakan pola trafik yang ekstrem dalam hitungan detik. Arsitekturnya harus menahan beban itu tanpa mengacaukan keadilan antrean.",
@@ -857,6 +860,7 @@ The next problem appears on event day. Thousands of visitors arrive within a sho
 		{
 			Slug:       "rams-resmi-beroperasi-sebagai-agensi-perangkat-lunak",
 			CategoryID: catID["news"],
+			Title:      "RAMS Resmi Beroperasi sebagai Agensi Perangkat Lunak",
 			TitleID:    "RAMS Resmi Beroperasi sebagai Agensi Perangkat Lunak",
 			TitleEN:    "RAMS Formally Begins Operating as a Software Agency",
 			ExcerptID:  "Setelah beberapa tahun membangun sistem untuk kebutuhan usaha sendiri, PT Ragam Manfaat Sinergi membuka layanan pengembangan perangkat lunak untuk pihak luar.",
@@ -888,6 +892,7 @@ RAMS services are aimed at that gap, with an emphasis on client ownership: code,
 		{
 			Slug:       "catatan-migrasi-data-warisan-spreadsheet",
 			CategoryID: catID["updates"],
+			Title:      "Catatan Lapangan: Memindahkan Proses dari Spreadsheet ke Sistem",
 			TitleID:    "Catatan Lapangan: Memindahkan Proses dari Spreadsheet ke Sistem",
 			TitleEN:    "Field Notes: Moving a Process Out of Spreadsheets",
 			ExcerptID:  "Bagian tersulit dari migrasi bukan memindahkan datanya, melainkan menemukan aturan bisnis yang selama ini hanya ada di kepala satu dua orang.",
@@ -927,6 +932,7 @@ We run the new system alongside the spreadsheet for a full period, then compare 
 		{
 			Slug:       "workshop-digitalisasi-umkm-semarang",
 			CategoryID: catID["event"],
+			Title:      "Lokakarya Digitalisasi Operasional UMKM di Semarang",
 			TitleID:    "Lokakarya Digitalisasi Operasional UMKM di Semarang",
 			TitleEN:    "SME Operational Digitalisation Workshop in Semarang",
 			ExcerptID:  "Sesi praktik bersama pelaku usaha kecil membahas cara memilih sistem yang sesuai skala, dan kapan sebaiknya belum berinvestasi pada perangkat lunak.",
