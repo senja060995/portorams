@@ -1,0 +1,76 @@
+{
+  "nav": {
+    "home": "Home",
+    "product": "SIDRA",
+    "solutions": "Solutions",
+    "news": "News & Updates",
+    "contact": "Contact Us",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu",
+    "skipToContent": "Skip to main content",
+    "toggleSolutions": "Show solutions list"
+  },
+  "footer": {
+    "navigation": "Navigation",
+    "solutions": "Solutions",
+    "legal": "Legal",
+    "follow": "Follow",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "backToTop": "Back to top"
+  },
+  "common": {
+    "readMore": "Read More",
+    "learnMore": "Learn More",
+    "viewAll": "View All",
+    "loadMore": "Load More",
+    "loading": "Loading…",
+    "allArticles": "All Articles",
+    "latestUpdate": "Latest Update",
+    "breadcrumbHome": "Home",
+    "solutionFor": "Solution for",
+    "contactUs": "Contact Us",
+    "whatsapp": "Contact us on WhatsApp",
+    "switchLocale": "Switch language",
+    "empty": "No content to display yet.",
+    "minRead": "min read",
+    "updatedAt": "Last updated"
+  },
+  "news": {
+    "filterLabel": "Filter by category",
+    "all": "All Articles",
+    "relatedTitle": "More Articles",
+    "backToList": "Back to News & Updates"
+  },
+  "contact": {
+    "name": "Full Name",
+    "email": "Email Address",
+    "company": "Company Name",
+    "phone": "Phone Number",
+    "solution": "Solution of Interest",
+    "solutionPlaceholder": "Select a solution",
+    "solutionOther": "Other",
+    "message": "Your Message",
+    "messagePlaceholder": "Tell us the operational problem you want to solve.",
+    "submit": "Send Message",
+    "submitting": "Sending…",
+    "optional": "optional",
+    "success": "Thank you. We have received your message and will follow up shortly.",
+    "error": "The message could not be sent. Please try again or reach us on WhatsApp.",
+    "consent": "By clicking send, you agree to the RAMS <link>Privacy Policy</link>.",
+    "errors": {
+      "nameRequired": "Name is required, minimum 2 characters.",
+      "emailRequired": "Email address is required.",
+      "emailInvalid": "That email address is not valid.",
+      "messageRequired": "Message is required, minimum 10 characters."
+    }
+  },
+  "error": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The link you opened may have moved or never existed.",
+    "backHome": "Back to Home",
+    "genericTitle": "Something went wrong",
+    "genericBody": "We could not load this section. Please try reloading the page.",
+    "retry": "Try Again"
+  }
+}

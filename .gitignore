@@ -17,6 +17,9 @@ dist/
 *.sqlite
 *.sqlite3
 
+# Uploaded media (served from disk, not versioned)
+/backend/uploads/
+
 # Environment Files (Keep .env.example for templates)
 .env
 .env.local

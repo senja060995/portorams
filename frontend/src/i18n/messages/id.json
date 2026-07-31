@@ -1,0 +1,76 @@
+{
+  "nav": {
+    "home": "Beranda",
+    "product": "SIDRA",
+    "solutions": "Solusi",
+    "news": "Berita & Pembaruan",
+    "contact": "Hubungi Kami",
+    "openMenu": "Buka menu navigasi",
+    "closeMenu": "Tutup menu navigasi",
+    "skipToContent": "Lompat ke konten utama",
+    "toggleSolutions": "Tampilkan daftar solusi"
+  },
+  "footer": {
+    "navigation": "Navigasi",
+    "solutions": "Solusi",
+    "legal": "Legal",
+    "follow": "Ikuti Kami",
+    "privacy": "Kebijakan Privasi",
+    "terms": "Syarat & Ketentuan",
+    "backToTop": "Kembali ke atas"
+  },
+  "common": {
+    "readMore": "Baca Selengkapnya",
+    "learnMore": "Pelajari Lebih Lanjut",
+    "viewAll": "Lihat Semua",
+    "loadMore": "Muat Lebih Banyak",
+    "loading": "Memuat…",
+    "allArticles": "Semua Artikel",
+    "latestUpdate": "Pembaruan Terbaru",
+    "breadcrumbHome": "Beranda",
+    "solutionFor": "Solusi untuk",
+    "contactUs": "Hubungi Kami",
+    "whatsapp": "Hubungi kami via WhatsApp",
+    "switchLocale": "Ganti bahasa",
+    "empty": "Belum ada konten untuk ditampilkan.",
+    "minRead": "menit baca",
+    "updatedAt": "Terakhir diperbarui"
+  },
+  "news": {
+    "filterLabel": "Saring berdasarkan kategori",
+    "all": "Semua Artikel",
+    "relatedTitle": "Artikel Lainnya",
+    "backToList": "Kembali ke Berita & Pembaruan"
+  },
+  "contact": {
+    "name": "Nama Lengkap",
+    "email": "Alamat Email",
+    "company": "Nama Perusahaan",
+    "phone": "Nomor Telepon",
+    "solution": "Solusi yang Diminati",
+    "solutionPlaceholder": "Pilih solusi",
+    "solutionOther": "Lainnya",
+    "message": "Pesan Anda",
+    "messagePlaceholder": "Ceritakan kendala operasional yang ingin Anda selesaikan.",
+    "submit": "Kirim Pesan",
+    "submitting": "Mengirim…",
+    "optional": "opsional",
+    "success": "Terima kasih. Pesan Anda sudah kami terima dan akan segera ditindaklanjuti.",
+    "error": "Pesan gagal terkirim. Silakan coba lagi atau hubungi kami via WhatsApp.",
+    "consent": "Dengan menekan tombol kirim, Anda menyetujui <link>Kebijakan Privasi</link> RAMS.",
+    "errors": {
+      "nameRequired": "Nama wajib diisi, minimal 2 karakter.",
+      "emailRequired": "Alamat email wajib diisi.",
+      "emailInvalid": "Format alamat email tidak valid.",
+      "messageRequired": "Pesan wajib diisi, minimal 10 karakter."
+    }
+  },
+  "error": {
+    "notFoundTitle": "Halaman tidak ditemukan",
+    "notFoundBody": "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",
+    "backHome": "Kembali ke Beranda",
+    "genericTitle": "Terjadi kesalahan",
+    "genericBody": "Kami tidak dapat memuat bagian ini. Silakan coba muat ulang halaman.",
+    "retry": "Coba Lagi"
+  }
+}

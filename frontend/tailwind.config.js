@@ -1,50 +1,82 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        space: {
-          950: '#020617', // Deep space void
-          900: '#070c18', // Orbital dark
-          850: '#0b1329', // Deep navy canvas
-          800: '#0f172a', // Space card bg
-          700: '#1e293b', // Space border
+        brand: {
+          950: '#000B4D',
+          900: '#001080',
+          800: '#0016A3',
+          700: '#0021C4',
+          600: '#0044E0',
+          500: '#0088FF',
+          400: '#00B2FF',
+          300: '#5CCCFF',
+          200: '#A8E1FF',
+          100: '#D8E9F4',
+          50: '#F0F6FB',
         },
-        neon: {
-          cyan: '#06b6d4',
-          blue: '#3b82f6',
-          violet: '#8b5cf6',
-          emerald: '#10b981',
-          amber: '#f59e0b',
+        ink: {
+          900: '#111111',
+          800: '#333333',
+          700: '#484848',
+          500: '#767676',
+          400: '#A9A9A9',
+          300: '#C9C9C9',
+          200: '#EBEBEB',
+          100: '#EFF2F4',
         },
       },
-      backgroundImage: {
-        'radial-space': 'radial-gradient(ellipse at top, #0f172a 0%, #020617 80%)',
-        'cyber-gradient': 'linear-gradient(135deg, rgba(6,182,212,0.15) 0%, rgba(139,92,246,0.15) 100%)',
-        'glow-line': 'linear-gradient(90deg, transparent, #06b6d4, transparent)',
+      fontFamily: {
+        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['clamp(2.5rem, 6vw, 5rem)', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'display-lg': ['clamp(2rem, 4.5vw, 3.5rem)', { lineHeight: '1.1', letterSpacing: '-0.015em' }],
+        'display-md': ['clamp(1.75rem, 3vw, 2.5rem)', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
+        'display-sm': ['clamp(1.375rem, 2vw, 1.75rem)', { lineHeight: '1.25' }],
+      },
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '2.5rem',
       },
       boxShadow: {
-        'neon-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.4)',
-        'neon-violet': '0 0 25px -5px rgba(139, 92, 246, 0.4)',
-        'cyber-card': '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+        card: '0 4px 24px -8px rgba(0, 22, 163, 0.12)',
+        'card-hover': '0 16px 48px -12px rgba(0, 22, 163, 0.22)',
+        nav: '0 2px 16px -4px rgba(0, 11, 77, 0.10)',
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, #0016A3 0%, #0088FF 100%)',
+        'brand-soft': 'linear-gradient(180deg, #F0F6FB 0%, #FFFFFF 100%)',
+        'hero-scrim': 'linear-gradient(180deg, rgba(0,11,77,0.55) 0%, rgba(0,11,77,0.15) 55%, rgba(0,11,77,0.75) 100%)',
+      },
+      maxWidth: {
+        content: '1280px',
+        prose: '68ch',
+      },
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
       animation: {
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'orbit-slow': 'spin 30s linear infinite',
-        'glow-pulse': 'glowPulse 2s infinite alternate',
+        marquee: 'marquee var(--marquee-duration, 40s) linear infinite',
+        'fade-up': 'fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
       keyframes: {
-        glowPulse: {
-          '0%': { boxShadow: '0 0 10px rgba(6, 182, 212, 0.3)' },
-          '100%': { boxShadow: '0 0 25px rgba(6, 182, 212, 0.8)' },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        fadeUp: {
+          from: { opacity: '0', transform: 'translateY(16px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },
   },
   plugins: [],
-}
+};
