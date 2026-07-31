@@ -30,6 +30,9 @@ services:
       DATABASE_URL: "postgres://rams:rams_password@db:5432/rams_db?sslmode=disable"
       JWT_SECRET: "rams_jwt_secret_change_me_in_production_2026"
       GIN_MODE: "release"
+      PUBLIC_API_URL: "https://rams.biz.id"
+    volumes:
+      - rams_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -51,3 +54,4 @@ services:
 
 volumes:
   rams_postgres_data:
+  rams_uploads:
