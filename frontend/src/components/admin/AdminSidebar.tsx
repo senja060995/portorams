@@ -14,6 +14,7 @@ import {
   Package,
   Scale,
   Settings,
+  ShieldCheck,
   Sparkles,
   SquareStack,
 } from 'lucide-react';
@@ -41,6 +42,12 @@ const navGroups = [
       { href: '/admin/value-props', label: 'Keunggulan', icon: Sparkles },
       { href: '/admin/approach', label: 'Tahapan Kerja', icon: Building2 },
       { href: '/admin/partners', label: 'Mitra', icon: Handshake },
+    ],
+  },
+  {
+    title: 'Keamanan',
+    items: [
+      { href: '/admin/wallets', label: 'Wallet Akses', icon: ShieldCheck, adminOnly: true },
     ],
   },
   {
@@ -73,6 +80,9 @@ export function AdminSidebar() {
             </p>
             <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
+                if ('adminOnly' in item && item.adminOnly && user?.role !== 'admin') {
+                  return null;
+                }
                 const active =
                   item.href === '/admin'
                     ? pathname === '/admin'
@@ -106,7 +116,13 @@ export function AdminSidebar() {
         {user ? (
           <div className="mb-3 px-2">
             <p className="truncate text-sm font-medium text-ink-800">{user.username}</p>
-            <p className="truncate text-xs text-ink-500">{user.role}</p>
+            {user.wallet_address ? (
+              <p className="truncate font-mono text-xs text-ink-500" title={user.wallet_address}>
+                {user.wallet_address.slice(0, 6)}…{user.wallet_address.slice(-4)}
+              </p>
+            ) : (
+              <p className="truncate text-xs text-ink-500">{user.role}</p>
+            )}
           </div>
         ) : null}
 

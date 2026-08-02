@@ -32,13 +32,15 @@ func pick(valueID, valueEN, locale string) string {
 }
 
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Username  string    `gorm:"uniqueIndex;not null" json:"username"`
-	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
-	Password  string    `gorm:"not null" json:"-"`
-	Role      string    `gorm:"default:'editor'" json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            uint       `gorm:"primaryKey" json:"id"`
+	Username      string     `gorm:"uniqueIndex;not null" json:"username"`
+	Email         string     `gorm:"uniqueIndex;not null" json:"email"`
+	Password      string     `gorm:"not null" json:"-"`
+	Role          string     `gorm:"default:'editor'" json:"role"`
+	WalletAddress string     `gorm:"uniqueIndex;default:null" json:"wallet_address"`
+	LastLoginAt   *time.Time `json:"last_login_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // Partner is a client/partner logo shown in the homepage marquee.
@@ -319,6 +321,76 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Token string `json:"token"`
 	User  User   `json:"user"`
+}
+
+// AllowedWallet is the server-side allowlist of EVM addresses that may sign in
+// to the CMS. Addresses are stored lowercase; only entries with Active=true
+// are accepted during authentication.
+type AllowedWallet struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Address   string    `gorm:"uniqueIndex;not null" json:"address"`
+	Label     string    `json:"label"`
+	Role      string    `gorm:"default:'editor'" json:"role"`
+	Active    bool      `gorm:"default:true" json:"active"`
+	CreatedBy uint      `json:"created_by"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// WalletNonce is a single-use, time-limited signing challenge bound to one
+// address and one client IP. UsedAt is set atomically when a verify attempt
+// consumes it, so a nonce can never be replayed.
+type WalletNonce struct {
+	ID        uint       `gorm:"primaryKey"`
+	Nonce     string     `gorm:"uniqueIndex;not null"`
+	Address   string     `gorm:"index;not null"`
+	IP        string     `gorm:"index"`
+	IssuedAt  time.Time  `gorm:"not null"`
+	ExpiresAt time.Time  `gorm:"not null"`
+	UsedAt    *time.Time `gorm:"index"`
+	CreatedAt time.Time
+}
+
+// AdminSession tracks every issued JWT by its jti claim so tokens can be
+// revoked server-side (logout, wallet deactivation) before they expire.
+type AdminSession struct {
+	ID        uint       `gorm:"primaryKey"`
+	Jti       string     `gorm:"uniqueIndex;not null"`
+	UserID    uint       `gorm:"index;not null"`
+	IP        string     `gorm:"index"`
+	UserAgent string
+	ExpiresAt time.Time  `gorm:"not null"`
+	RevokedAt *time.Time `gorm:"index"`
+	CreatedAt time.Time
+}
+
+// AuthAuditLog records every wallet authentication attempt (success and
+// failure) together with the client IP and outcome for post-incident review.
+type AuthAuditLog struct {
+	ID        uint      `gorm:"primaryKey"`
+	Address   string    `gorm:"index"`
+	IP        string    `gorm:"index"`
+	UserAgent string
+	Outcome   string // success | failure
+	Reason    string
+	CreatedAt time.Time
+}
+
+type WalletChallengeRequest struct {
+	Address string `json:"address" binding:"required"`
+}
+
+type WalletChallengeResponse struct {
+	Message string `json:"message"`
+	Nonce   string `json:"nonce"`
+	Address string `json:"address"`
+	ChainID int64  `json:"chain_id"`
+}
+
+type WalletVerifyRequest struct {
+	Address   string `json:"address" binding:"required"`
+	Nonce     string `json:"nonce" binding:"required"`
+	Signature string `json:"signature" binding:"required"`
 }
 
 type ContactRequest struct {

@@ -1,8 +1,10 @@
 package db
 
 import (
+	"crypto/rand"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"rams-backend/models"
@@ -25,7 +27,7 @@ const (
 // locales. Every block is guarded by a count check so it is safe to run on
 // every boot and never overwrites content edited through the CMS.
 func SeedDatabase(database *gorm.DB) {
-	seedAdmin(database)
+	seedWalletAdmin(database)
 	seedSettings(database)
 	seedSections(database)
 	seedValueProps(database)
@@ -38,31 +40,105 @@ func SeedDatabase(database *gorm.DB) {
 	seedLegalPages(database)
 }
 
-func seedAdmin(database *gorm.DB) {
-	username := envOr("ADMIN_USERNAME", "admin")
-	password := envOr("ADMIN_PASSWORD", "admin123")
-	email := envOr("ADMIN_EMAIL", "admin@rams.biz.id")
-
-	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Printf("❌ Failed to hash admin password: %v", err)
+// seedWalletAdmin bootstraps the wallet allowlist from ALLOWED_WALLETS and
+// ties each address to a CMS account. The first address becomes an admin; the
+// rest become editors unless the entry carries an explicit ":role" suffix.
+//
+// Unlike the old password-based seeding this deliberately never resets any
+// password on boot, and the provisioned accounts carry an unusable random
+// password — the only way in is a registered wallet signature.
+func seedWalletAdmin(database *gorm.DB) {
+	raw := strings.TrimSpace(os.Getenv("ALLOWED_WALLETS"))
+	if raw == "" {
+		log.Println("⚠️  ALLOWED_WALLETS kosong — tidak ada wallet yang dapat masuk CMS. Isi .env lalu restart.")
 		return
 	}
 
-	var existing models.User
-	if err := database.Where("username = ? OR email = ?", username, email).First(&existing).Error; err != nil {
-		database.Create(&models.User{
-			Username: username,
-			Email:    email,
-			Password: string(hashed),
-			Role:     "admin",
-		})
-		log.Printf("✅ Admin user seeded: %s (Password: %s)", username, password)
-	} else {
-		existing.Password = string(hashed)
-		database.Save(&existing)
-		log.Printf("✅ Admin user password synced: %s (Password: %s)", username, password)
+	first := true
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		parts := strings.SplitN(entry, ":", 2)
+		addr := strings.TrimSpace(parts[0])
+		role := "editor"
+		if first {
+			role = "admin"
+		}
+		if len(parts) == 2 {
+			if r := strings.TrimSpace(parts[1]); r == "admin" || r == "editor" {
+				role = r
+			}
+		}
+		first = false
+
+		if !isValidAddress(addr) {
+			log.Printf("⚠️  ALLOWED_WALLETS berisi alamat tidak valid, dilewati: %q", addr)
+			continue
+		}
+		address := strings.ToLower(addr)
+
+		upsertAllowedWallet(database, address, role)
 	}
+}
+
+func upsertAllowedWallet(database *gorm.DB, address, role string) {
+	var wallet models.AllowedWallet
+	if err := database.Where("address = ?", address).First(&wallet).Error; err == nil {
+		if wallet.Role != role {
+			database.Model(&wallet).Update("role", role)
+		}
+	} else {
+		database.Create(&models.AllowedWallet{
+			Address: address,
+			Label:   "Seeded dari ALLOWED_WALLETS",
+			Role:    role,
+			Active:  true,
+		})
+	}
+
+	var user models.User
+	if err := database.Where("wallet_address = ?", address).First(&user).Error; err != nil {
+		username := "wallet-" + address[2:10]
+		hashed, err := bcrypt.GenerateFromPassword(randomBytes(32), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("❌ Gagal membuat akun wallet %s: %v", address, err)
+			return
+		}
+		database.Create(&models.User{
+			Username:      username,
+			Email:         username + "@wallet.local",
+			Password:      string(hashed),
+			Role:          role,
+			WalletAddress: address,
+		})
+		log.Printf("✅ Wallet admin di-seed: %s (role: %s)", address, role)
+	} else if user.Role != role {
+		database.Model(&user).Update("role", role)
+	}
+}
+
+// isValidAddress performs a light structural check (0x + 40 hex). Full EIP-55
+// checksum validation happens at sign-in and in the CMS allowlist editor.
+func isValidAddress(addr string) bool {
+	if len(addr) != 42 || !strings.HasPrefix(addr, "0x") {
+		return false
+	}
+	for _, r := range addr[2:] {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+func randomBytes(n int) []byte {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		panic(err)
+	}
+	return buf
 }
 
 func envOr(key, fallback string) string {
@@ -84,8 +160,8 @@ func seedSettings(database *gorm.DB) {
 		{Key: "company_short", ValueID: "RAMS", ValueEN: "RAMS"},
 		{Key: "tagline", ValueID: "Perangkat Lunak Presisi untuk Bisnis Indonesia", ValueEN: "Precision Software for Indonesian Business"},
 		{Key: "email", ValueID: "hello@rams.biz.id", ValueEN: "hello@rams.biz.id"},
-		{Key: "phone", ValueID: "+62 812 0000 0000", ValueEN: "+62 812 0000 0000"},
-		{Key: "whatsapp", ValueID: "6281200000000", ValueEN: "6281200000000"},
+		{Key: "phone", ValueID: "+62 823 2598 0067", ValueEN: "+62 823 2598 0067"},
+		{Key: "whatsapp", ValueID: "6282325980067", ValueEN: "6282325980067"},
 		{Key: "address", ValueID: "Sidomulyo, Kabupaten Semarang, Jawa Tengah, Indonesia", ValueEN: "Sidomulyo, Semarang Regency, Central Java, Indonesia"},
 		{Key: "linkedin", ValueID: "https://www.linkedin.com/company/rams-id", ValueEN: "https://www.linkedin.com/company/rams-id"},
 		{Key: "instagram", ValueID: "https://www.instagram.com/rams.id", ValueEN: "https://www.instagram.com/rams.id"},

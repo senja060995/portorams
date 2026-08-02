@@ -18,6 +18,7 @@ export interface AdminUser {
   username: string;
   email: string;
   role: string;
+  wallet_address: string;
 }
 
 export function getToken(): string | null {
@@ -100,6 +101,49 @@ export async function login(username: string, password: string) {
   });
   setToken(result.token);
   return result.user;
+}
+
+export interface WalletChallenge {
+  message: string;
+  nonce: string;
+  address: string;
+  chain_id: number;
+}
+
+/**
+ * Requests a server-issued signing challenge for a wallet address. The server
+ * only issues challenges to allowlisted wallets, so an unregistered address
+ * is rejected before anything is shown to the user.
+ */
+export function walletChallenge(address: string) {
+  return adminRequest<WalletChallenge>('/auth/wallet/challenge', {
+    method: 'POST',
+    body: { address },
+    anonymous: true,
+  });
+}
+
+/** Submits the MetaMask signature and stores the issued session token. */
+export async function walletVerify(address: string, nonce: string, signature: string) {
+  const result = await adminRequest<{ token: string; user: AdminUser }>('/auth/wallet/verify', {
+    method: 'POST',
+    body: { address, nonce, signature },
+    anonymous: true,
+  });
+  setToken(result.token);
+  return result.user;
+}
+
+/**
+ * Revokes the session server-side before clearing the local token, so the JWT
+ * stops working even if it leaks afterwards.
+ */
+export async function logout(): Promise<void> {
+  try {
+    await adminRequest<{ message: string }>('/admin/logout', { method: 'POST' });
+  } finally {
+    clearToken();
+  }
 }
 
 export function fetchMe() {
@@ -361,4 +405,50 @@ export interface AdminProduct {
   published: boolean;
   values: AdminProductValue[];
   features: AdminProductFeature[];
+}
+
+// --- Wallet allowlist -------------------------------------------------------
+
+export interface AdminWallet {
+  id: number;
+  address: string;
+  label: string;
+  role: 'admin' | 'editor';
+  active: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminAuditEntry {
+  id: number;
+  address: string;
+  ip: string;
+  user_agent: string;
+  outcome: 'success' | 'failure';
+  reason: string;
+  created_at: string;
+}
+
+export function fetchWallets() {
+  return adminRequest<AdminWallet[]>('/admin/wallets');
+}
+
+export function createWallet(payload: { address: string; label: string; role: string; active: boolean }) {
+  return adminRequest<AdminWallet>('/admin/wallets', { method: 'POST', body: payload });
+}
+
+export function updateWallet(
+  id: number,
+  payload: { address?: string; label?: string; role?: string; active?: boolean },
+) {
+  return adminRequest<AdminWallet>(`/admin/wallets/${id}`, { method: 'PUT', body: payload });
+}
+
+export function deleteWallet(id: number) {
+  return adminRequest<{ message: string }>(`/admin/wallets/${id}`, { method: 'DELETE' });
+}
+
+export function fetchAuditLog(limit = 100) {
+  return adminRequest<AdminAuditEntry[]>(`/admin/audit-log?limit=${limit}`);
 }

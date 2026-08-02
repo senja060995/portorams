@@ -65,10 +65,25 @@
       "messageRequired": "Message is required, minimum 10 characters."
     }
   },
+  "chat": {
+    "toggle": "Open customer service chat",
+    "close": "Close chat",
+    "title": "Need help?",
+    "subtitle": "RAMS Customer Service",
+    "greeting": "Hello! Welcome to RAMS. How can we help? You can ask about our solutions, pricing, or how to reach us.",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "typing": "Typing…",
+    "error": "Sorry, the chat service is having issues. Please try again or reach us on WhatsApp.",
+    "chipPrice": "How much do your services cost?",
+    "chipServices": "What services do you offer?",
+    "chipContact": "How can I contact you?"
+  },
   "error": {
-    "notFoundTitle": "Page not found",
-    "notFoundBody": "The link you opened may have moved or never existed.",
+    "notFoundTitle": "Oops! This page is lost",
+    "notFoundBody": "The link you opened may have moved, been removed, or never existed. No worries — we'll help you get back on track.",
     "backHome": "Back to Home",
+    "exploreSolutions": "Explore Our Solutions",
     "genericTitle": "Something went wrong",
     "genericBody": "We could not load this section. Please try reloading the page.",
     "retry": "Try Again"

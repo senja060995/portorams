@@ -210,3 +210,83 @@ export async function submitContact(payload: ContactPayload): Promise<void> {
     throw new ApiError(message, response.status, '/contact');
   }
 }
+
+// --- Customer service chat ----------------------------------------------------
+
+export interface ChatRedirect {
+  type: 'whatsapp';
+  label: string;
+  url: string;
+  message: string;
+}
+
+export interface ChatMeta {
+  intent: string;
+  redirect?: ChatRedirect;
+}
+
+/**
+ * Sends a free-text message to the customer service bot and streams the reply
+ * as newline-delimited JSON so the widget can render a human typing effect.
+ *
+ * @param message  The visitor's message.
+ * @param locale   Chat language (id | en).
+ * @param onMeta   Called once with the intent/redirect before any text arrives.
+ * @param onDelta  Called with each text fragment as it streams in.
+ */
+export async function streamChatMessage(
+  message: string,
+  locale: Locale,
+  onMeta: (meta: ChatMeta) => void,
+  onDelta: (text: string) => void,
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, locale }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) errorMessage = body.error;
+    } catch {
+      // Non-JSON error body; keep the status-based message.
+    }
+    throw new ApiError(errorMessage, response.status, '/chat');
+  }
+
+  if (!response.body) {
+    throw new ApiError('Streaming is not supported', response.status, '/chat');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let event: { type?: string; text?: string; intent?: string; redirect?: ChatRedirect };
+      try {
+        event = JSON.parse(trimmed) as { type?: string; text?: string; intent?: string; redirect?: ChatRedirect };
+      } catch {
+        continue;
+      }
+      if (event.type === 'meta') {
+        onMeta({ intent: event.intent ?? 'fallback', redirect: event.redirect });
+      } else if (event.type === 'delta' && event.text) {
+        onDelta(event.text);
+      }
+    }
+
+    if (done) break;
+  }
+}

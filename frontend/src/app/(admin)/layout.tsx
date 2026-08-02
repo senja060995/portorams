@@ -1,19 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-
-import '@/app/globals.css';
-
-const heading = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-heading',
-});
-
-const body = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-body',
-});
 
 export const metadata: Metadata = {
   title: 'RAMS CMS',
@@ -26,9 +11,5 @@ export default function AdminRootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="id" className={`${heading.variable} ${body.variable}`}>
-      <body className="min-h-screen bg-ink-100">{children}</body>
-    </html>
-  );
+  return <div className="min-h-screen bg-ink-100">{children}</div>;
 }

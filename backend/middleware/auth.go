@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"rams-backend/models"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 var jwtSecret []byte
@@ -25,31 +28,48 @@ func InitJWTSecret() error {
 	return nil
 }
 
+// SessionTTL is how long an admin session stays valid before it must be
+// refreshed by signing in again. Short enough that a stolen token is useful
+// for a limited window, long enough to not be annoying during a work day.
+const SessionTTL = 1 * time.Hour
+
 type Claims struct {
 	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
+	Wallet   string `json:"wallet"`
+	JTI      string `json:"jti"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uint, username, role string) (string, error) {
+// GenerateToken issues a signed JWT carrying the caller's identity plus a
+// unique session id (jti). The token is only honoured while a matching,
+// non-revoked AdminSession row exists in the database.
+func GenerateToken(userID uint, username, role, wallet, jti string) (string, error) {
 	if len(jwtSecret) == 0 {
 		return "", errors.New("jwt secret not initialised")
 	}
+	now := time.Now()
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
 		Role:     role,
+		Wallet:   wallet,
+		JTI:      jti,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(12 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(now.Add(SessionTTL)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			ID:        jti,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
 }
 
-func AuthMiddleware() gin.HandlerFunc {
+// AuthMiddleware verifies the bearer token and then confirms the referenced
+// session is still live in the database, so revoking a session (logout, wallet
+// deactivation) invalidates the token immediately rather than at expiry.
+func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -75,12 +95,44 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
+		if claims.JTI == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
+
+		var session models.AdminSession
+		err = db.Where("jti = ? AND user_id = ? AND revoked_at IS NULL AND expires_at > ?",
+			claims.JTI, claims.UserID, time.Now()).First(&session).Error
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Sesi berakhir. Silakan masuk kembali."})
+			return
+		}
 
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
+		c.Set("wallet", claims.Wallet)
+		c.Set("jti", claims.JTI)
 		c.Next()
 	}
+}
+
+// RevokeSession marks a jti as revoked so its token stops working. It is safe
+// to call for ids that do not exist yet.
+func RevokeSession(db *gorm.DB, jti string) error {
+	now := time.Now()
+	return db.Model(&models.AdminSession{}).
+		Where("jti = ? AND revoked_at IS NULL", jti).
+		Update("revoked_at", &now).Error
+}
+
+// RevokeAllSessionsForUser kills every live session for a user. Used when a
+// wallet is deactivated so existing logins are cut off immediately.
+func RevokeAllSessionsForUser(db *gorm.DB, userID uint) error {
+	now := time.Now()
+	return db.Model(&models.AdminSession{}).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
+		Update("revoked_at", &now).Error
 }
 
 // RequireRole gates a route to the listed roles. Must run after AuthMiddleware.
