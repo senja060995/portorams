@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { AdminApiError, clearToken, fetchMe, getToken, logout, type AdminUser } from '@/lib/admin';
+import { AdminApiError, clearToken, fetchMe, logout, type AdminUser } from '@/lib/admin';
 import { hasWalletProvider, watchWallet } from '@/lib/wallet';
 
 interface AdminAuthValue {
@@ -96,14 +96,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     let active = true;
 
     const verify = async () => {
-      if (!getToken()) {
-        if (active) {
-          setLoading(false);
-          router.replace('/admin/login');
-        }
-        return;
-      }
-
+      // The session is carried by the httpOnly cookie; a sessionStorage token
+      // is an optional fallback. Either way the server decides.
       try {
         const me = await fetchMe();
         if (active) setUser(me);

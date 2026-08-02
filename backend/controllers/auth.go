@@ -69,6 +69,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	middleware.SetSessionCookie(c, token)
 	c.JSON(http.StatusOK, models.LoginResponse{Token: token, User: user})
 }
 
@@ -79,6 +80,7 @@ func (h *Handler) Logout(c *gin.Context) {
 	if jti != "" {
 		_ = middleware.RevokeSession(h.DB, jti)
 	}
+	middleware.ClearSessionCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil keluar"})
 }
 

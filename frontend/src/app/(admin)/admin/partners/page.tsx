@@ -30,6 +30,7 @@ export default function AdminPartnersPage() {
   const crud = useAdminCrud<AdminPartner>({
     path: '/admin/partners',
     getId: (item) => item.id,
+    stepUp: { deleteAction: 'delete.partner' },
   });
 
   const [open, setOpen] = useState(false);

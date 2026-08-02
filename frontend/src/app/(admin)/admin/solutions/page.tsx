@@ -78,6 +78,7 @@ export default function AdminSolutionsPage() {
   const crud = useAdminCrud<AdminSolution>({
     path: '/admin/solutions',
     getId: (item) => item.id,
+    stepUp: { deleteAction: 'delete.solution' },
   });
 
   const [open, setOpen] = useState(false);

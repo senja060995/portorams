@@ -39,6 +39,13 @@ export default function AdminWalletsPage() {
   const crud = useAdminCrud<AdminWallet>({
     path: '/admin/wallets',
     getId: (item) => item.id,
+    stepUp: {
+      deleteAction: 'delete.wallet',
+      createAction: 'create.wallet',
+      updateAction: 'update.wallet',
+      saveTarget: (payload, existing) =>
+        existing ? String(existing.id) : String(payload.address ?? '').toLowerCase(),
+    },
   });
 
   const [open, setOpen] = useState(false);

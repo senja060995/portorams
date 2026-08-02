@@ -13,6 +13,7 @@ export default function AdminInquiriesPage() {
   const crud = useAdminCrud<AdminInquiry>({
     path: '/admin/inquiries',
     getId: (item) => item.id,
+    stepUp: { deleteAction: 'delete.inquiry' },
   });
 
   const [expanded, setExpanded] = useState<number | null>(null);

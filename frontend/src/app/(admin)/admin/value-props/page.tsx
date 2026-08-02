@@ -26,6 +26,7 @@ export default function AdminValuePropsPage() {
     path: '/admin/value-props',
     getId: (item) => item.id,
     upsert: true,
+    stepUp: { deleteAction: 'delete.value_prop' },
   });
 
   const [open, setOpen] = useState(false);

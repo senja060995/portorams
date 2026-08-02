@@ -37,6 +37,7 @@ export default function AdminArticlesPage() {
   const crud = useAdminCrud<AdminArticle>({
     path: '/admin/articles',
     getId: (item) => item.id,
+    stepUp: { deleteAction: 'delete.article' },
   });
 
   const [categories, setCategories] = useState<AdminArticleCategory[]>([]);

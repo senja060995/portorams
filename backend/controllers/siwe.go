@@ -23,9 +23,15 @@ const siweStatement = "Masuk ke RAMS CMS. Tanda tangan ini tidak mengirimkan tra
 
 // NormalizeAddress validates an EVM address and returns its canonical
 // lowercase form. Both all-lowercase and valid EIP-55 checksummed forms are
-// accepted; a malformed address is rejected.
+// accepted; a malformed address is rejected. A bare 40-character hex string
+// without the 0x prefix is rejected too: downstream code (ChecksummedAddress)
+// assumes the prefix is present, so allowing it would silently mangle the
+// address shown in the signing message.
 func NormalizeAddress(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
+	if !strings.HasPrefix(trimmed, "0x") && !strings.HasPrefix(trimmed, "0X") {
+		return "", errBadAddress
+	}
 	if !common.IsHexAddress(trimmed) {
 		return "", errBadAddress
 	}

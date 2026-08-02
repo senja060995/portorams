@@ -50,6 +50,15 @@ func (h *Handler) WalletChallenge(c *gin.Context) {
 		return
 	}
 
+	// The challenge must be requested from the site the user trusts; a request
+	// arriving on a different Host (or from a disallowed Origin) is rejected
+	// before a nonce is issued.
+	if !h.requestIsFromOurSite(c) {
+		h.auditFailure(c, address, "bad_host")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Wallet tidak diizinkan"})
+		return
+	}
+
 	// Unknown or inactive wallets get the same generic response; only a valid,
 	// active allowlist entry yields a challenge.
 	var allowed models.AllowedWallet
@@ -122,6 +131,15 @@ func (h *Handler) WalletVerify(c *gin.Context) {
 	if !strings.EqualFold(nonce.Address, address) || nonce.UsedAt != nil || !time.Now().Before(nonce.ExpiresAt) {
 		h.Lockout.RegisterFailure(key)
 		h.auditFailure(c, address, "bad_nonce")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kredensial tidak valid"})
+		return
+	}
+	// The nonce is bound to the client IP it was issued to. Rejecting a verify
+	// from a different IP prevents a stolen nonce from being replayed across
+	// networks (the signature check below remains the primary control).
+	if nonce.IP != "" && !strings.EqualFold(nonce.IP, ip) {
+		h.Lockout.RegisterFailure(key)
+		h.auditFailure(c, address, "bad_ip")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kredensial tidak valid"})
 		return
 	}
@@ -201,6 +219,7 @@ func (h *Handler) WalletVerify(c *gin.Context) {
 	h.Lockout.Reset(key)
 	h.auditSuccess(c, address)
 
+	middleware.SetSessionCookie(c, token)
 	c.JSON(http.StatusOK, models.LoginResponse{Token: token, User: *user})
 }
 
@@ -247,6 +266,16 @@ func (h *Handler) auditFailure(c *gin.Context, address, reason string) {
 		Outcome:   "failure",
 		Reason:    reason,
 	})
+
+	// Alert on the signals that indicate a targeted attack rather than a
+	// typo: lockouts, invalid signatures and signer mismatches.
+	switch reason {
+	case "locked_out", "bad_signature", "signer_mismatch", "bad_nonce", "bad_ip":
+		notifyTelegram("⚠️ RAMS CMS security alert\nWallet: " + address +
+			"\nAlasan: " + reason +
+			"\nIP: " + c.ClientIP() +
+			"\nWaktu: " + time.Now().UTC().Format(time.RFC3339))
+	}
 }
 
 func (h *Handler) auditSuccess(c *gin.Context, address string) {

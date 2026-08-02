@@ -16,6 +16,34 @@ import (
 
 var jwtSecret []byte
 
+// allowedOrigins mirrors the API CORS whitelist and is used for CSRF defence
+// in depth on state-changing requests.
+var allowedOrigins = loadAllowedOrigins()
+
+func loadAllowedOrigins() []string {
+	raw := os.Getenv("ALLOWED_ORIGINS")
+	if raw == "" {
+		raw = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://rams.biz.id"
+	}
+	origins := []string{}
+	for _, o := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(o); trimmed != "" && trimmed != "*" {
+			origins = append(origins, strings.TrimRight(trimmed, "/"))
+		}
+	}
+	return origins
+}
+
+func originAllowed(origin string) bool {
+	origin = strings.TrimRight(origin, "/")
+	for _, o := range allowedOrigins {
+		if o == origin {
+			return true
+		}
+	}
+	return false
+}
+
 // InitJWTSecret loads the signing key from the environment. It returns an
 // error instead of falling back to a baked-in default so a misconfigured
 // deployment fails loudly rather than shipping a publicly known secret.
@@ -31,7 +59,13 @@ func InitJWTSecret() error {
 // SessionTTL is how long an admin session stays valid before it must be
 // refreshed by signing in again. Short enough that a stolen token is useful
 // for a limited window, long enough to not be annoying during a work day.
+// Sessions are extended while the user is active (see AuthMiddleware).
 const SessionTTL = 1 * time.Hour
+
+// SessionCookieName is the httpOnly cookie that carries the bearer token. It
+// is set on login and read as a fallback when no Authorization header is sent,
+// so the JWT never has to be readable from JavaScript.
+const SessionCookieName = "rams_session"
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`
@@ -66,25 +100,49 @@ func GenerateToken(userID uint, username, role, wallet, jti string) (string, err
 	return token.SignedString(jwtSecret)
 }
 
+// bearerToken extracts the JWT from the Authorization header or, when the
+// header is absent, from the httpOnly session cookie. The cookie path keeps
+// the token out of reach of JavaScript while still working across same-origin
+// requests without a client-side store.
+func bearerToken(c *gin.Context) string {
+	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			return parts[1]
+		}
+		return ""
+	}
+	if cookie, err := c.Cookie(SessionCookieName); err == nil {
+		return cookie
+	}
+	return ""
+}
+
 // AuthMiddleware verifies the bearer token and then confirms the referenced
 // session is still live in the database, so revoking a session (logout, wallet
-// deactivation) invalidates the token immediately rather than at expiry.
+// deactivation) invalidates the token immediately rather than at expiry. An
+// active session is slid forward so long-lived editing sessions stay valid.
 func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		rawToken := bearerToken(c)
+		if rawToken == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 			return
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
-			return
+		// CSRF defence in depth: a state-changing request carrying an Origin
+		// must come from an allowed site. SameSite=Lax already stops cookies
+		// on cross-site POSTs; this also blocks a malicious page that somehow
+		// obtains the bearer token.
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut || c.Request.Method == http.MethodDelete {
+			if origin := c.GetHeader("Origin"); origin != "" && !originAllowed(origin) {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Origin tidak diizinkan"})
+				return
+			}
 		}
 
 		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(parts[1], claims, func(t *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(rawToken, claims, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
@@ -108,6 +166,16 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Sliding window: extend the session when less than half of its TTL
+		// remains, so an actively-used session never expires mid-editing while
+		// an idle one still lapses.
+		if session.ExpiresAt.Before(time.Now().Add(SessionTTL / 2)) {
+			newExpiry := time.Now().Add(SessionTTL)
+			_ = db.Model(&models.AdminSession{}).
+				Where("id = ? AND revoked_at IS NULL", session.ID).
+				Update("expires_at", newExpiry)
+		}
+
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
@@ -115,6 +183,19 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 		c.Set("jti", claims.JTI)
 		c.Next()
 	}
+}
+
+// SetSessionCookie stores the bearer token in an httpOnly, Secure, SameSite=Lax
+// cookie. httpOnly keeps it out of reach of any injected script; SameSite=Lax
+// still sends it on same-site navigation while blocking cross-site POSTs.
+func SetSessionCookie(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(SessionCookieName, token, int(SessionTTL.Seconds()), "/", "", true, true)
+}
+
+// ClearSessionCookie expires the session cookie.
+func ClearSessionCookie(c *gin.Context) {
+	c.SetCookie(SessionCookieName, "", -1, "/", "", false, true)
 }
 
 // RevokeSession marks a jti as revoked so its token stops working. It is safe

@@ -55,6 +55,7 @@ func main() {
 		&models.AllowedWallet{},
 		&models.WalletNonce{},
 		&models.AdminSession{},
+		&models.ActionNonce{},
 		&models.AuthAuditLog{},
 	); err != nil {
 		log.Fatalf("❌ AutoMigrate failed: %v", err)
@@ -156,20 +157,25 @@ func main() {
 		admin.POST("/logout", h.Logout)
 		admin.GET("/stats", h.AdminGetStats)
 
+		// Destructive actions require a fresh wallet signature (step-up).
+		// A signed challenge is obtained from /actions/challenge and submitted
+		// with the request; without it the mutation is rejected.
+		admin.POST("/actions/challenge", h.AdminActionChallenge)
+
 		admin.GET("/solutions", h.AdminGetSolutions)
 		admin.POST("/solutions", h.AdminCreateSolution)
 		admin.PUT("/solutions/:id", h.AdminUpdateSolution)
-		admin.DELETE("/solutions/:id", h.AdminDeleteSolution)
+		admin.DELETE("/solutions/:id", h.RequireAction(controllers.ActionDeleteSolution, controllers.ParamIDTarget), h.AdminDeleteSolution)
 
 		admin.GET("/products", h.AdminGetProducts)
 		admin.POST("/products", h.AdminCreateProduct)
 		admin.PUT("/products/:id", h.AdminUpdateProduct)
-		admin.DELETE("/products/:id", h.AdminDeleteProduct)
+		admin.DELETE("/products/:id", h.RequireAction(controllers.ActionDeleteProduct, controllers.ParamIDTarget), h.AdminDeleteProduct)
 
 		admin.GET("/articles", h.AdminGetArticles)
 		admin.POST("/articles", h.AdminCreateArticle)
 		admin.PUT("/articles/:id", h.AdminUpdateArticle)
-		admin.DELETE("/articles/:id", h.AdminDeleteArticle)
+		admin.DELETE("/articles/:id", h.RequireAction(controllers.ActionDeleteArticle, controllers.ParamIDTarget), h.AdminDeleteArticle)
 
 		admin.GET("/article-categories", h.AdminGetCategories)
 		admin.POST("/article-categories", h.AdminUpsertCategory)
@@ -177,15 +183,15 @@ func main() {
 		admin.GET("/partners", h.AdminGetPartners)
 		admin.POST("/partners", h.AdminCreatePartner)
 		admin.PUT("/partners/:id", h.AdminUpdatePartner)
-		admin.DELETE("/partners/:id", h.AdminDeletePartner)
+		admin.DELETE("/partners/:id", h.RequireAction(controllers.ActionDeletePartner, controllers.ParamIDTarget), h.AdminDeletePartner)
 
 		admin.GET("/value-props", h.AdminGetValueProps)
 		admin.POST("/value-props", h.AdminUpsertValueProp)
-		admin.DELETE("/value-props/:id", h.AdminDeleteValueProp)
+		admin.DELETE("/value-props/:id", h.RequireAction(controllers.ActionDeleteValueProp, controllers.ParamIDTarget), h.AdminDeleteValueProp)
 
 		admin.GET("/approach-steps", h.AdminGetApproachSteps)
 		admin.POST("/approach-steps", h.AdminUpsertApproachStep)
-		admin.DELETE("/approach-steps/:id", h.AdminDeleteApproachStep)
+		admin.DELETE("/approach-steps/:id", h.RequireAction(controllers.ActionDeleteApproachStep, controllers.ParamIDTarget), h.AdminDeleteApproachStep)
 
 		admin.GET("/sections", h.AdminGetSections)
 		admin.POST("/sections", h.AdminUpsertSection)
@@ -198,19 +204,19 @@ func main() {
 
 		admin.GET("/inquiries", h.AdminGetInquiries)
 		admin.PUT("/inquiries/:id/status", h.AdminUpdateInquiryStatus)
-		admin.DELETE("/inquiries/:id", h.AdminDeleteInquiry)
+		admin.DELETE("/inquiries/:id", h.RequireAction(controllers.ActionDeleteInquiry, controllers.ParamIDTarget), h.AdminDeleteInquiry)
 
 		admin.POST("/upload", h.UploadMedia)
 		admin.GET("/media", h.AdminListMedia)
-		admin.DELETE("/media/:id", h.AdminDeleteMedia)
+		admin.DELETE("/media/:id", h.RequireAction(controllers.ActionDeleteMedia, controllers.ParamIDTarget), h.AdminDeleteMedia)
 
 		// Wallet access control is admin-only and sits behind the shared auth
 		// middleware above, so mutating the allowlist requires a signed-in
-		// admin session.
+		// admin session plus a fresh wallet signature for the mutation.
 		admin.GET("/wallets", middleware.RequireRole("admin"), h.AdminGetWallets)
-		admin.POST("/wallets", middleware.RequireRole("admin"), h.AdminCreateWallet)
-		admin.PUT("/wallets/:id", middleware.RequireRole("admin"), h.AdminUpdateWallet)
-		admin.DELETE("/wallets/:id", middleware.RequireRole("admin"), h.AdminDeleteWallet)
+		admin.POST("/wallets", middleware.RequireRole("admin"), h.RequireAction(controllers.ActionCreateWallet, controllers.BodyAddressTarget), h.AdminCreateWallet)
+		admin.PUT("/wallets/:id", middleware.RequireRole("admin"), h.RequireAction(controllers.ActionUpdateWallet, controllers.ParamIDTarget), h.AdminUpdateWallet)
+		admin.DELETE("/wallets/:id", middleware.RequireRole("admin"), h.RequireAction(controllers.ActionDeleteWallet, controllers.ParamIDTarget), h.AdminDeleteWallet)
 		admin.GET("/audit-log", middleware.RequireRole("admin"), h.AdminGetAuditLog)
 	}
 
@@ -305,7 +311,8 @@ func cleanupAuthData(database *gorm.DB) {
 
 	for range ticker.C {
 		now := time.Now()
-		_ = database.Where("expires_at < ?", now).Delete(&models.WalletNonce{}).Error
+		_ = database.Where("used_at IS NOT NULL OR expires_at < ?", now).Delete(&models.WalletNonce{}).Error
+		_ = database.Where("used_at IS NOT NULL OR expires_at < ?", now).Delete(&models.ActionNonce{}).Error
 		_ = database.Where("expires_at < ?", now).Delete(&models.AdminSession{}).Error
 		_ = database.Where("revoked_at IS NOT NULL AND created_at < ?", now.Add(-24*time.Hour)).Delete(&models.AdminSession{}).Error
 		// Audit history is kept for 90 days for incident review.

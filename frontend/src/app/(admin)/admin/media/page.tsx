@@ -6,9 +6,14 @@ import { Check, Copy, ImagePlus, Loader2, Trash2 } from 'lucide-react';
 
 import { AdminShell } from '@/components/admin/AdminShell';
 import { AdminButton, AdminListState } from '@/components/admin/AdminUi';
+import {
+  StepUpCanceledError,
+  useRunWithStepUp,
+} from '@/components/admin/StepUpProvider';
 import { adminRequest, uploadMedia, type MediaAsset } from '@/lib/admin';
 
 export default function AdminMediaPage() {
+  const { runWithStepUp } = useRunWithStepUp();
   const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +68,20 @@ export default function AdminMediaPage() {
 
     setDeletingId(asset.id);
     try {
-      await adminRequest(`/admin/media/${asset.id}`, { method: 'DELETE' });
+      await runWithStepUp('delete.media', String(asset.id), async (auth) => {
+        await adminRequest(`/admin/media/${asset.id}`, {
+          method: 'DELETE',
+          body: auth
+            ? {
+                action_nonce: auth.action_nonce,
+                action_signature: auth.action_signature,
+              }
+            : undefined,
+        });
+      });
       await load();
     } catch (err) {
+      if (err instanceof StepUpCanceledError) return;
       setError(err instanceof Error ? err.message : 'Gagal menghapus berkas.');
     } finally {
       setDeletingId(null);

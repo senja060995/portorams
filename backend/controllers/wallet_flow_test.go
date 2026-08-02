@@ -29,7 +29,7 @@ func newTestHandler(t *testing.T) (*Handler, *gin.Engine, *gorm.DB) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	if err := db.AutoMigrate(&models.User{}, &models.AllowedWallet{}, &models.WalletNonce{}, &models.AdminSession{}, &models.AuthAuditLog{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.AllowedWallet{}, &models.WalletNonce{}, &models.AdminSession{}, &models.ActionNonce{}, &models.AuthAuditLog{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 
@@ -46,6 +46,7 @@ func doJSON(t *testing.T, engine *gin.Engine, method, path, body string, auth st
 		req.Header.Set("Authorization", "Bearer "+auth)
 	}
 	w := httptest.NewRecorder()
+	req.Host = "localhost:3000"
 	engine.ServeHTTP(w, req)
 	return w
 }

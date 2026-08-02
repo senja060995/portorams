@@ -71,6 +71,7 @@ export default function AdminProductsPage() {
   const crud = useAdminCrud<AdminProduct>({
     path: '/admin/products',
     getId: (item) => item.id,
+    stepUp: { deleteAction: 'delete.product' },
   });
 
   const [open, setOpen] = useState(false);

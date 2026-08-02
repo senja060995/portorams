@@ -364,6 +364,23 @@ type AdminSession struct {
 	CreatedAt time.Time
 }
 
+// ActionNonce is a short-lived, single-use challenge that must be re-signed by
+// the wallet before a destructive admin action is executed. It is bound to the
+// session (jti), the action and its target, and the client IP, so a signature
+// obtained for one action cannot be replayed against another.
+type ActionNonce struct {
+	ID        uint       `gorm:"primaryKey"`
+	Nonce     string     `gorm:"uniqueIndex;not null"`
+	Jti       string     `gorm:"index;not null"`
+	Action    string     `gorm:"index;not null"`
+	Target    string     `gorm:"index"`
+	IP        string     `gorm:"index"`
+	IssuedAt  time.Time  `gorm:"not null"`
+	ExpiresAt time.Time  `gorm:"not null"`
+	UsedAt    *time.Time `gorm:"index"`
+	CreatedAt time.Time
+}
+
 // AuthAuditLog records every wallet authentication attempt (success and
 // failure) together with the client IP and outcome for post-incident review.
 type AuthAuditLog struct {

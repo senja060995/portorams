@@ -11,28 +11,12 @@ if (process.env.NEXT_PUBLIC_API_URL) {
   }
 }
 
-const apiHost = apiOrigin ? `${apiOrigin.protocol}//${apiOrigin.host}` : '';
-
 /**
- * Content Security Policy for the admin CMS. Next.js injects inline bootstrap
- * scripts and style tags, so those need 'unsafe-inline'; everything else is
- * locked to self-hosted resources plus the API origin the editor talks to.
- * Scoped to production: Next's dev HMR needs 'unsafe-eval', and a broken CSP
- * during development would be worse than none at all.
+ * Content Security Policy is injected per-request by middleware.ts with a
+ * per-request nonce (see buildCsp there); a static value here could never
+ * carry the nonce Next.js stamps onto its inline scripts. The remaining
+ * headers below are static and safe to apply from the config.
  */
-const adminCsp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://images.unsplash.com${apiHost ? ` ${apiHost}` : ''}`,
-  "font-src 'self' data:",
-  `connect-src 'self'${apiHost ? ` ${apiHost}` : ''}`,
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-].join('; ');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -68,10 +52,7 @@ const nextConfig = {
         ? [
             {
               source: '/admin/:path*',
-              headers: [
-                { key: 'X-Frame-Options', value: 'DENY' },
-                { key: 'Content-Security-Policy', value: adminCsp },
-              ],
+              headers: [{ key: 'X-Frame-Options', value: 'DENY' }],
             },
           ]
         : []),

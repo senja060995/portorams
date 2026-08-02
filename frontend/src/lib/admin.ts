@@ -5,10 +5,13 @@ import { API_BASE_URL } from '@/lib/api';
 /**
  * Admin API client.
  *
- * The JWT is kept in sessionStorage only: it disappears when the tab closes and
- * is never written to a cookie, so it cannot be replayed by a cross-site
- * request. There is deliberately no offline or mock fallback — if the API is
- * unreachable, the user stays logged out rather than seeing a fake session.
+ * The backend sets an httpOnly session cookie on login, so same-origin
+ * requests authenticate via the cookie and the JWT never has to live in
+ * JavaScript. A token kept in sessionStorage is still honoured as a fallback
+ * (e.g. older tabs) — whichever the backend accepts, the 401 handling here
+ * stays the same. There is deliberately no offline or mock fallback — if the
+ * API is unreachable, the user stays logged out rather than seeing a fake
+ * session.
  */
 
 const TOKEN_KEY = 'rams_admin_token';
@@ -67,16 +70,19 @@ export async function adminRequest<T>(
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
 
+  // The session cookie (httpOnly) authenticates same-origin requests. The
+  // Authorization header is a secondary path for clients that have a stored
+  // token; without one the request still goes out and relies on the cookie.
   if (!anonymous) {
     const token = getToken();
-    if (!token) throw new AdminApiError('Sesi berakhir. Silakan masuk kembali.', 401);
-    headers.Authorization = `Bearer ${token}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
   }
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
+    credentials: 'include',
     cache: 'no-store',
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
@@ -152,15 +158,15 @@ export function fetchMe() {
 
 /** Uploads a single image and returns the stored asset. */
 export async function uploadMedia(file: File) {
-  const token = getToken();
-  if (!token) throw new AdminApiError('Sesi berakhir. Silakan masuk kembali.', 401);
-
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch(`${API_BASE_URL}/admin/upload`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+    },
+    credentials: 'include',
     body: formData,
   });
 
@@ -451,4 +457,36 @@ export function deleteWallet(id: number) {
 
 export function fetchAuditLog(limit = 100) {
   return adminRequest<AdminAuditEntry[]>(`/admin/audit-log?limit=${limit}`);
+}
+
+// --- Step-up (wallet re-verification for destructive actions) -----------------
+
+export interface ActionChallenge {
+  message: string;
+  nonce: string;
+  action: string;
+  target: string;
+  expires_at: string;
+}
+
+/**
+ * Requests a short-lived signing challenge for a destructive action. The user
+ * signs the returned message with their wallet and the signature travels with
+ * the action itself, so deleting (or changing the allowlist) always requires a
+ * fresh wallet confirmation in addition to the logged-in session.
+ */
+export function adminActionChallenge(action: string, target: string) {
+  return adminRequest<ActionChallenge>('/admin/actions/challenge', {
+    method: 'POST',
+    body: { action, target },
+  });
+}
+
+/** True when the API rejected a mutation because step-up confirmation is needed. */
+export function isStepUpRequired(err: unknown): boolean {
+  return (
+    err instanceof AdminApiError &&
+    err.status === 403 &&
+    /tanda tangan/i.test(err.message)
+  );
 }

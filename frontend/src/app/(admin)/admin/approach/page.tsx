@@ -27,6 +27,7 @@ export default function AdminApproachPage() {
     path: '/admin/approach-steps',
     getId: (item) => item.id,
     upsert: true,
+    stepUp: { deleteAction: 'delete.approach_step' },
   });
 
   const [open, setOpen] = useState(false);
