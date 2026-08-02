@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 
@@ -12,20 +11,6 @@ import { isLocale, locales, type Locale } from '@/i18n/config';
 import { getProducts, getSettings, getSolutions } from '@/lib/api';
 import { localeAlternates } from '@/lib/seo';
 import { localePath } from '@/lib/utils';
-
-import '@/app/globals.css';
-
-const heading = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-heading',
-});
-
-const body = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-body',
-});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -106,83 +91,81 @@ export default async function LocaleLayout({
   }));
 
   return (
-    <html lang={typedLocale} className={`${heading.variable} ${body.variable}`}>
-      <body className="flex min-h-screen flex-col">
-        <NextIntlClientProvider locale={typedLocale} messages={messages}>
-          <OrganizationJsonLd
-            locale={typedLocale}
-            siteUrl={siteUrl}
-            name={companyName}
-            tagline={settings.tagline ?? ''}
-            logoUrl={settings.logo_url}
-            email={settings.email}
-            phone={settings.phone}
-            address={settings.address}
-            socials={[settings.linkedin, settings.instagram]}
-          />
+    <div className="flex min-h-screen flex-col">
+      <NextIntlClientProvider locale={typedLocale} messages={messages}>
+        <OrganizationJsonLd
+          locale={typedLocale}
+          siteUrl={siteUrl}
+          name={companyName}
+          tagline={settings.tagline ?? ''}
+          logoUrl={settings.logo_url}
+          email={settings.email}
+          phone={settings.phone}
+          address={settings.address}
+          socials={[settings.linkedin, settings.instagram]}
+        />
 
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-brand-800 focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-white"
-          >
-            {t('skipToContent')}
-          </a>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-brand-800 focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-white"
+        >
+          {t('skipToContent')}
+        </a>
 
-          <Header
-            locale={typedLocale}
-            companyName={companyName}
-            companyShort={companyShort}
-            productLabel={flagship?.name ?? ''}
-            productHref={flagship ? `/produk/${flagship.slug}` : null}
-            solutions={solutions.map((solution) => ({
-              slug: solution.slug,
-              name: solution.name,
-              summary: solution.summary,
-            }))}
-            labels={{
-              home: t('home'),
-              solutions: t('solutions'),
-              news: t('news'),
-              contact: t('contact'),
-              openMenu: t('openMenu'),
-              closeMenu: t('closeMenu'),
-            }}
-          />
+        <Header
+          locale={typedLocale}
+          companyName={companyName}
+          companyShort={companyShort}
+          productLabel={flagship?.name ?? ''}
+          productHref={flagship ? `/produk/${flagship.slug}` : null}
+          solutions={solutions.map((solution) => ({
+            slug: solution.slug,
+            name: solution.name,
+            summary: solution.summary,
+          }))}
+          labels={{
+            home: t('home'),
+            solutions: t('solutions'),
+            news: t('news'),
+            contact: t('contact'),
+            openMenu: t('openMenu'),
+            closeMenu: t('closeMenu'),
+          }}
+        />
 
-          <main id="main" className="flex-1 pt-20">
-            {children}
-          </main>
+        <main id="main" className="flex-1 pt-20">
+          {children}
+        </main>
 
-          <Footer
-            locale={typedLocale}
-            companyName={companyName}
-            companyShort={companyShort}
-            footerNote={settings.footer_note ?? ''}
-            copyright={settings.copyright ?? companyName}
-            contact={{
-              email: settings.email,
-              phone: settings.phone,
-              address: settings.address,
-            }}
-            social={{
-              linkedin: settings.linkedin,
-              instagram: settings.instagram,
-            }}
-            navigation={navigationLinks}
-            solutions={solutionLinks}
-            labels={{
-              navigation: tFooter('navigation'),
-              solutions: tFooter('solutions'),
-              legal: tFooter('legal'),
-              follow: tFooter('follow'),
-              privacy: tFooter('privacy'),
-              terms: tFooter('terms'),
-            }}
-          />
+        <Footer
+          locale={typedLocale}
+          companyName={companyName}
+          companyShort={companyShort}
+          footerNote={settings.footer_note ?? ''}
+          copyright={settings.copyright ?? companyName}
+          contact={{
+            email: settings.email,
+            phone: settings.phone,
+            address: settings.address,
+          }}
+          social={{
+            linkedin: settings.linkedin,
+            instagram: settings.instagram,
+          }}
+          navigation={navigationLinks}
+          solutions={solutionLinks}
+          labels={{
+            navigation: tFooter('navigation'),
+            solutions: tFooter('solutions'),
+            legal: tFooter('legal'),
+            follow: tFooter('follow'),
+            privacy: tFooter('privacy'),
+            terms: tFooter('terms'),
+          }}
+        />
 
-          <ChatWidget />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+        <ChatWidget />
+      </NextIntlClientProvider>
+    </div>
   );
 }

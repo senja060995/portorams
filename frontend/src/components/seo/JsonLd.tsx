@@ -120,11 +120,15 @@ export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
 }
 
 function JsonLd({ data }: { data: Record<string, unknown> }) {
+  // JSON.stringify does not escape "</script>", which would let a CMS string
+  // break out of the script tag and execute as markup. Escaping "<" keeps the
+  // payload valid JSON while neutralising the closing-tag attack.
+  const html = JSON.stringify(data).replace(/</g, '\\u003c');
   return (
     <script
       type="application/ld+json"
       // The payload is built from typed server data, never raw user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }

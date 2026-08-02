@@ -80,9 +80,10 @@
     "chipContact": "Cara menghubungi?"
   },
   "error": {
-    "notFoundTitle": "Halaman tidak ditemukan",
-    "notFoundBody": "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",
+    "notFoundTitle": "Ups! Halaman ini hilang",
+    "notFoundBody": "Tautan yang Anda buka mungkin sudah dipindahkan, dihapus, atau tidak pernah ada. Jangan khawatir, kami bantu arahkan Anda kembali.",
     "backHome": "Kembali ke Beranda",
+    "exploreSolutions": "Lihat Solusi Kami",
     "genericTitle": "Terjadi kesalahan",
     "genericBody": "Kami tidak dapat memuat bagian ini. Silakan coba muat ulang halaman.",
     "retry": "Coba Lagi"
