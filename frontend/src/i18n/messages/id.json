@@ -65,6 +65,20 @@
       "messageRequired": "Pesan wajib diisi, minimal 10 karakter."
     }
   },
+  "chat": {
+    "toggle": "Buka chat customer service",
+    "close": "Tutup chat",
+    "title": "Butuh bantuan?",
+    "subtitle": "Customer Service RAMS",
+    "greeting": "Halo! Selamat datang di RAMS. Ada yang bisa kami bantu? Anda bisa bertanya tentang solusi, harga, atau cara menghubungi kami.",
+    "placeholder": "Tulis pesan…",
+    "send": "Kirim",
+    "typing": "Sedang mengetik…",
+    "error": "Maaf, layanan chat sedang bermasalah. Silakan coba lagi atau hubungi kami via WhatsApp.",
+    "chipPrice": "Berapa harga layanan?",
+    "chipServices": "Layanan apa saja?",
+    "chipContact": "Cara menghubungi?"
+  },
   "error": {
     "notFoundTitle": "Halaman tidak ditemukan",
     "notFoundBody": "Tautan yang Anda buka mungkin sudah dipindahkan atau tidak pernah ada.",

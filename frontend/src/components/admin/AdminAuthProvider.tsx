@@ -1,9 +1,18 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 
-import { AdminApiError, clearToken, fetchMe, getToken, type AdminUser } from '@/lib/admin';
+import { AdminApiError, clearToken, fetchMe, getToken, logout, type AdminUser } from '@/lib/admin';
+import { hasWalletProvider, watchWallet } from '@/lib/wallet';
 
 interface AdminAuthValue {
   user: AdminUser | null;
@@ -17,6 +26,9 @@ const AdminAuthContext = createContext<AdminAuthValue>({
   signOut: () => {},
 });
 
+/** Sign the user out after this much idle time (default 30 minutes). */
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
 export function useAdminAuth() {
   return useContext(AdminAuthContext);
 }
@@ -24,17 +36,61 @@ export function useAdminAuth() {
 /**
  * Verifies the stored token against the API on mount. A token that the server
  * rejects is discarded immediately, so a stale value cannot keep the shell open.
+ *
+ * Because the CMS is wallet-only, the session is also torn down the moment the
+ * wallet changes account or network, and after a period of inactivity.
  */
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const signOut = useCallback(() => {
+  const forceSignOut = useCallback(() => {
     clearToken();
     setUser(null);
     router.replace('/admin/login');
   }, [router]);
+
+  const signOut = useCallback(async () => {
+    setUser(null);
+    try {
+      await logout();
+    } catch {
+      // Local token is cleared regardless; the server session also expires.
+    }
+    router.replace('/admin/login');
+  }, [router]);
+
+  // Wallet switching must end the session immediately: the identity that owns
+  // the JWT is no longer in control of the browser.
+  useEffect(() => {
+    if (!user || !hasWalletProvider()) return;
+    const unsubscribe = watchWallet(forceSignOut, forceSignOut);
+    return unsubscribe;
+  }, [user, forceSignOut]);
+
+  // Idle timeout: a signed-in but unattended tab does not stay open forever.
+  useEffect(() => {
+    if (!user) return;
+
+    const reset = () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => {
+        void logout().catch(() => {});
+        forceSignOut();
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((event) => window.addEventListener(event, reset, { passive: true }));
+    reset();
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, reset));
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [user, forceSignOut]);
 
   useEffect(() => {
     let active = true;
@@ -68,7 +124,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
-  const value = useMemo(() => ({ user, loading, signOut }), [loading, signOut, user]);
+  const value = useMemo(
+    () => ({ user, loading, signOut }),
+    [loading, signOut, user],
+  );
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

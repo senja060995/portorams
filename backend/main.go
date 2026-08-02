@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +52,10 @@ func main() {
 		&models.LegalPage{},
 		&models.ContactMessage{},
 		&models.MediaAsset{},
+		&models.AllowedWallet{},
+		&models.WalletNonce{},
+		&models.AdminSession{},
+		&models.AuthAuditLog{},
 	); err != nil {
 		log.Fatalf("❌ AutoMigrate failed: %v", err)
 	}
@@ -74,6 +79,25 @@ func main() {
 		publicURL = "http://localhost:8080"
 	}
 
+	// --- Wallet sign-in configuration ---------------------------------------
+	siweDomain := envOr("SIWE_DOMAIN", "localhost:3000")
+	siweURI := envOr("SIWE_URI", "http://localhost:3000")
+	chainID, err := strconv.ParseInt(envOr("EXPECTED_CHAIN_ID", "1"), 10, 64)
+	if err != nil {
+		log.Fatalf("❌ EXPECTED_CHAIN_ID tidak valid: %v", err)
+	}
+	log.Printf("🔐 Wallet login: domain=%s uri=%s chain_id=%d", siweDomain, siweURI, chainID)
+
+	// --- AI chat configuration (OpenAI-compatible, e.g. Groq) -----------------
+	aiBaseURL := strings.TrimRight(envOr("AI_BASE_URL", "https://api.groq.com/openai/v1"), "/")
+	aiAPIKey := os.Getenv("AI_API_KEY")
+	aiModel := envOr("AI_MODEL", "llama-3.3-70b-versatile")
+	if aiAPIKey == "" {
+		log.Println("ℹ️  AI_API_KEY kosong — chat bot memakai deteksi kata kunci (fallback)")
+	} else {
+		log.Printf("🤖 Chat AI: base=%s model=%s", aiBaseURL, aiModel)
+	}
+
 	if os.Getenv("GIN_MODE") == "" && os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -86,7 +110,11 @@ func main() {
 	// Uploaded media is served read-only from disk.
 	r.Static("/uploads", absUploadDir)
 
-	h := controllers.NewHandler(database, absUploadDir, publicURL)
+	h := controllers.NewHandler(database, absUploadDir, publicURL, siweDomain, siweURI, chainID, aiBaseURL, aiAPIKey, aiModel)
+
+	// Periodically purge one-time nonces, expired sessions and old audit rows
+	// so the auth tables cannot grow without bound.
+	go cleanupAuthData(database)
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
@@ -95,6 +123,8 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/auth/login", middleware.RateLimit(10, time.Minute), h.Login)
+		api.POST("/auth/wallet/challenge", middleware.RateLimit(20, time.Minute), h.WalletChallenge)
+		api.POST("/auth/wallet/verify", middleware.RateLimit(10, time.Minute), h.WalletVerify)
 
 		api.GET("/settings", h.GetSettings)
 		api.GET("/sections", h.GetSections)
@@ -115,12 +145,15 @@ func main() {
 		api.GET("/legal/:slug", h.GetLegalPage)
 
 		api.POST("/contact", middleware.RateLimit(5, 10*time.Minute), h.SubmitContact)
+
+		api.POST("/chat", middleware.RateLimit(20, time.Minute), h.ChatBot)
 	}
 
 	admin := api.Group("/admin")
-	admin.Use(middleware.AuthMiddleware(), middleware.RequireRole("admin", "editor"))
+	admin.Use(middleware.AuthMiddleware(database), middleware.RequireRole("admin", "editor"))
 	{
 		admin.GET("/me", h.Me)
+		admin.POST("/logout", h.Logout)
 		admin.GET("/stats", h.AdminGetStats)
 
 		admin.GET("/solutions", h.AdminGetSolutions)
@@ -170,6 +203,15 @@ func main() {
 		admin.POST("/upload", h.UploadMedia)
 		admin.GET("/media", h.AdminListMedia)
 		admin.DELETE("/media/:id", h.AdminDeleteMedia)
+
+		// Wallet access control is admin-only and sits behind the shared auth
+		// middleware above, so mutating the allowlist requires a signed-in
+		// admin session.
+		admin.GET("/wallets", middleware.RequireRole("admin"), h.AdminGetWallets)
+		admin.POST("/wallets", middleware.RequireRole("admin"), h.AdminCreateWallet)
+		admin.PUT("/wallets/:id", middleware.RequireRole("admin"), h.AdminUpdateWallet)
+		admin.DELETE("/wallets/:id", middleware.RequireRole("admin"), h.AdminDeleteWallet)
+		admin.GET("/audit-log", middleware.RequireRole("admin"), h.AdminGetAuditLog)
 	}
 
 	port := os.Getenv("PORT")
@@ -242,7 +284,27 @@ func securityHeaders() gin.HandlerFunc {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		// Auth endpoints must never be cached by intermediaries or the browser.
+		if strings.HasPrefix(c.Request.URL.Path, "/api/auth") || strings.HasPrefix(c.Request.URL.Path, "/api/admin") {
+			c.Header("Cache-Control", "no-store")
+		}
 		c.Next()
+	}
+}
+
+// cleanupAuthData prunes single-use nonces, dead sessions and old audit rows
+// on an interval so the authentication tables stay bounded.
+func cleanupAuthData(database *gorm.DB) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		now := time.Now()
+		_ = database.Where("expires_at < ?", now).Delete(&models.WalletNonce{}).Error
+		_ = database.Where("expires_at < ?", now).Delete(&models.AdminSession{}).Error
+		_ = database.Where("revoked_at IS NOT NULL AND created_at < ?", now.Add(-24*time.Hour)).Delete(&models.AdminSession{}).Error
+		// Audit history is kept for 90 days for incident review.
+		_ = database.Where("created_at < ?", now.Add(-90*24*time.Hour)).Delete(&models.AuthAuditLog{}).Error
 	}
 }
 

@@ -4,14 +4,14 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 
+import { ChatWidget } from '@/components/layout/ChatWidget';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
-import { WhatsAppFab } from '@/components/layout/WhatsAppFab';
 import { OrganizationJsonLd } from '@/components/seo/JsonLd';
 import { isLocale, locales, type Locale } from '@/i18n/config';
 import { getProducts, getSettings, getSolutions } from '@/lib/api';
 import { localeAlternates } from '@/lib/seo';
-import { localePath, whatsappLink } from '@/lib/utils';
+import { localePath } from '@/lib/utils';
 
 import '@/app/globals.css';
 
@@ -85,7 +85,6 @@ export default async function LocaleLayout({
     getProducts(typedLocale),
   ]);
 
-  const tCommon = await getTranslations({ locale, namespace: 'common' });
   const tFooter = await getTranslations({ locale, namespace: 'footer' });
 
   const flagship = products[0] ?? null;
@@ -181,10 +180,7 @@ export default async function LocaleLayout({
             }}
           />
 
-          <WhatsAppFab
-            href={whatsappLink(settings.whatsapp)}
-            label={tCommon('whatsapp')}
-          />
+          <ChatWidget />
         </NextIntlClientProvider>
       </body>
     </html>

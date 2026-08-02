@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"rams-backend/middleware"
 	"rams-backend/models"
 
 	"github.com/gin-gonic/gin"
@@ -11,13 +12,34 @@ import (
 )
 
 type Handler struct {
-	DB        *gorm.DB
-	UploadDir string
-	PublicURL string
+	DB         *gorm.DB
+	UploadDir  string
+	PublicURL  string
+	SiweDomain string
+	SiweURI    string
+	ChainID    int64
+	Lockout    *middleware.Lockout
+
+	// AI provider (OpenAI-compatible, e.g. Groq). Leave the API key empty to
+	// fall back to the built-in keyword bot for the customer chat.
+	AIBaseURL string
+	AIAPIKey  string
+	AIModel   string
 }
 
-func NewHandler(db *gorm.DB, uploadDir, publicURL string) *Handler {
-	return &Handler{DB: db, UploadDir: uploadDir, PublicURL: publicURL}
+func NewHandler(db *gorm.DB, uploadDir, publicURL, siweDomain, siweURI string, chainID int64, aiBaseURL, aiAPIKey, aiModel string) *Handler {
+	return &Handler{
+		DB:         db,
+		UploadDir:  uploadDir,
+		PublicURL:  publicURL,
+		SiweDomain: siweDomain,
+		SiweURI:    siweURI,
+		ChainID:    chainID,
+		Lockout:    middleware.NewLockout(),
+		AIBaseURL:  aiBaseURL,
+		AIAPIKey:   aiAPIKey,
+		AIModel:    aiModel,
+	}
 }
 
 // locale reads the requested content locale from the query string.
