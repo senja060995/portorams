@@ -95,10 +95,8 @@ export default function AdminLoginPage() {
           <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-gradient">
             <Wallet className="h-6 w-6 text-white" aria-hidden="true" />
           </span>
-          <h1 className="font-heading text-2xl font-bold text-brand-950">RAMS CMS</h1>
-          <p className="mt-2 text-sm text-ink-500">
-            Masuk dengan wallet Ethereum terdaftar. Tanpa password.
-          </p>
+          <h1 className="font-heading text-2xl font-bold text-brand-950">Login Admin</h1>
+          <p className="mt-2 text-sm text-ink-500">Login Tanpa Password</p>
         </div>
 
         <div className="rounded-3xl border border-ink-200 bg-white p-7 shadow-card">
@@ -173,12 +171,12 @@ export default function AdminLoginPage() {
               {busy ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  Menghubungkan MetaMask…
+                  Menyiapkan login…
                 </>
               ) : (
                 <>
                   <Wallet className="h-4 w-4" aria-hidden="true" />
-                  Hubungkan MetaMask
+                  Login Admin
                 </>
               )}
             </button>
