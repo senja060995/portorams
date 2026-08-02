@@ -3,9 +3,9 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 let apiOrigin = null;
-if (process.env.NEXT_PUBLIC_API_URL) {
+if (process.env.NEXT_PUBLIC_SITE_URL) {
   try {
-    apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL);
+    apiOrigin = new URL(process.env.NEXT_PUBLIC_SITE_URL);
   } catch {
     apiOrigin = null;
   }

@@ -65,6 +65,8 @@ module.exports = {
       animation: {
         marquee: 'marquee var(--marquee-duration, 40s) linear infinite',
         'fade-up': 'fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'blur-flip': 'blurFlip 0.8s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'merah-type': 'merahType 2.4s ease-in-out infinite',
       },
       keyframes: {
         marquee: {
@@ -74,6 +76,16 @@ module.exports = {
         fadeUp: {
           from: { opacity: '0', transform: 'translateY(16px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        blurFlip: {
+          from: { opacity: '0', transform: 'perspective(600px) rotateY(90deg) scale(0.8)', filter: 'blur(12px)' },
+          to: { opacity: '1', transform: 'perspective(600px) rotateY(0deg) scale(1)', filter: 'blur(0)' },
+        },
+        merahType: {
+          '0%, 100%': { color: '#FFFFFF' },
+          '15%': { color: '#CE1126' },
+          '30%': { color: '#CE1126' },
+          '45%': { color: '#FFFFFF' },
         },
       },
     },

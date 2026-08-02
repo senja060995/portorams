@@ -15,12 +15,26 @@ export function Hero({ section, fallbackCtaHref }: HeroProps) {
   if (!section) return null;
 
   const defaultTitle = 'Sistem Digital Presisi\nuntuk Bisnis Indonesia';
-  const defaultSubtitle = 'RAMS merancang ERP, POS, dan perangkat lunak kustom yang benar-benar dipakai di lapangan — dibangun dari masalah nyata, bukan dari brosur.';
+  const defaultSubtitle = 'RAMS mengembangkan ERP, POS, dan perangkat lunak kustom yang benar-benar digunakan di lapangan — dibangun dari tantangan nyata, bukan dari klaim teoritis.';
 
   const rawTitle = section.title && section.title.trim() !== '' ? section.title : defaultTitle;
   const rawSubtitle = section.subtitle && section.subtitle.trim() !== '' ? section.subtitle : defaultSubtitle;
 
   const lines = splitTitleLines(rawTitle);
+
+  function renderTitleLine(line: string) {
+    const parts = line.split(/(Indonesia)/);
+    return parts.map((part, i) => {
+      if (part === 'Indonesia') {
+        return (
+          <span key={i} className="animate-merah-type inline-block">
+            {part}
+          </span>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  }
 
   return (
     <section className="relative isolate flex flex-col justify-center overflow-hidden bg-[#020817] pt-20 pb-8 sm:pt-24 sm:pb-10 lg:pt-28 lg:pb-12">
@@ -54,7 +68,7 @@ export function Hero({ section, fallbackCtaHref }: HeroProps) {
           <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.14]">
             {lines.map((line, index) => (
               <span key={index} className="block">
-                {line}
+                {renderTitleLine(line)}
               </span>
             ))}
           </h1>

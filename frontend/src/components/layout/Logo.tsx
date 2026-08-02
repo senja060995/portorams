@@ -36,7 +36,7 @@ export function Logo({
         width={40}
         height={40}
         priority
-        className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+        className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10 animate-blur-flip"
       />
       <span className="flex flex-col leading-none">
         <span
