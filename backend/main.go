@@ -284,6 +284,11 @@ func securityHeaders() gin.HandlerFunc {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		// Uploaded media is served read-only and must never run scripts, even
+		// if a crafted file sneaks past the MIME sniffing on upload.
+		if strings.HasPrefix(c.Request.URL.Path, "/uploads") {
+			c.Header("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'")
+		}
 		// Auth endpoints must never be cached by intermediaries or the browser.
 		if strings.HasPrefix(c.Request.URL.Path, "/api/auth") || strings.HasPrefix(c.Request.URL.Path, "/api/admin") {
 			c.Header("Cache-Control", "no-store")

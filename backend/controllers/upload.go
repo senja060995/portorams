@@ -19,13 +19,14 @@ import (
 const maxUploadBytes = 8 << 20 // 8 MiB
 
 // allowedImageTypes maps an accepted MIME type to its canonical extension.
-// Sniffed from file content, not from the client-supplied filename.
+// Sniffed from file content, not from the client-supplied filename. SVG is
+// deliberately excluded: SVG can embed script, and serving it from a public
+// uploads path is a stored-XSS vector.
 var allowedImageTypes = map[string]string{
-	"image/jpeg":    ".jpg",
-	"image/png":     ".png",
-	"image/webp":    ".webp",
-	"image/svg+xml": ".svg",
-	"image/gif":     ".gif",
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+	"image/gif":  ".gif",
 }
 
 // UploadMedia accepts a single image under the "file" form field, stores it with

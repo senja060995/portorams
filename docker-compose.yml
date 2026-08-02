@@ -4,11 +4,9 @@ services:
     container_name: rams_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: rams_db
-      POSTGRES_USER: rams
-      POSTGRES_PASSWORD: rams_password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - rams_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,13 +22,8 @@ services:
     container_name: rams_backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
-    environment:
-      PORT: "8080"
-      DATABASE_URL: "postgres://rams:rams_password@db:5432/rams_db?sslmode=disable"
-      JWT_SECRET: "rams_jwt_secret_change_me_in_production_2026"
-      GIN_MODE: "release"
-      PUBLIC_API_URL: "https://rams.biz.id"
+      - "127.0.0.1:8080:8080"
+    env_file: .env
     volumes:
       - rams_uploads:/app/uploads
     depends_on:
@@ -44,7 +37,7 @@ services:
     container_name: rams_frontend
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     environment:
       NODE_ENV: "production"
       PORT: "3000"

@@ -44,15 +44,6 @@ export default function AdminLoginPage() {
 
       const challenge = await walletChallenge(conn.address);
 
-      if (conn.chainId !== challenge.chain_id) {
-        setConnection(conn);
-        setStep('idle');
-        setError(
-          `Wallet berada di jaringan dengan Chain ID ${conn.chainId}, sedangkan CMS membutuhkan Chain ID ${challenge.chain_id} (Ethereum mainnet). Pindah jaringan di MetaMask, lalu coba lagi.`,
-        );
-        return;
-      }
-
       setConnection(conn);
       setMessage(challenge.message);
       setNonce(challenge.nonce);
